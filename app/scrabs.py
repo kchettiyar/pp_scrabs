@@ -4,6 +4,8 @@ from flask import Flask, send_file, abort, render_template
 from app import app
 import json
 import os
+import datetime
+
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 APP_STATIC = os.path.join(APP_ROOT, 'static')
@@ -23,10 +25,21 @@ def index():
 
     for td in range(0, si):
         header = str(tds_headers[td].string) if td == 15 else str(tds_headers[td].find('a').string)
-        value = (str(tds_values[td].find('a').string) if td in [0, 10, 11, 12, 13, 15] else str(tds_values[td].string)).rstrip('\r\n\t')
-        data[header] = value
+        value = ""
+        values = []
 
-    write_on_file(data)
+        if td in [0, 10, 11, 12, 13, 15]:
+            value = str(tds_values[td].find('a').string).rstrip('\r\n\t')
+            values = [value, "http://www.asx.com.au" + str(tds_values[td].find('a')['href']).rstrip('\r\n\t')]
+        else:
+            values = str(tds_values[td].string).rstrip('\r\n\t')
+
+        data[header] = values
+
+    data['date'] = datetime.datetime.now().strftime("%d-%B-%Y %I:%M:%S")
+    data['movement'] = "0"
+    data['marketcap'] = "0"
+
     return json.dumps(data)
 
 @app.route('/', defaults={'req_path': ''})
