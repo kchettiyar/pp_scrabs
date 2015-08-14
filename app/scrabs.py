@@ -40,6 +40,7 @@ def index():
     data['movement'] = "0"
     data['marketcap'] = "0"
 
+    write_on_file(data)
     return json.dumps(data)
 
 @app.route('/', defaults={'req_path': ''})
