@@ -5,10 +5,12 @@ from app import app
 import json
 import os
 import datetime
-
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 APP_STATIC = os.path.join(APP_ROOT, 'static')
+
 
 @app.route('/')
 def index():
@@ -37,11 +39,44 @@ def index():
         data[header] = values
 
     data['date'] = datetime.datetime.now().strftime("%d-%B-%Y %I:%M:%S")
+    data['Announcements'] = get_announcement_details()
     data['movement'] = "0"
     data['marketcap'] = "0"
 
     write_on_file(data)
     return json.dumps(data)
+
+
+#@app.route('/announcement')
+def get_announcement_details():
+    driver = webdriver.Firefox()
+    driver.get("http://search.asx.com.au/s/search.html?query=ppl&collection=asx-meta&profile=web")
+    page_source = driver.page_source
+
+    soup = BeautifulSoup(page_source)
+    table = soup.findAll('table', attrs={'class': 'search-results-announcement grid-generic'})
+    trs = table[0].findAll('tr')
+    announcements = []
+    announcement = {}
+
+    for tr in trs:
+        tds = tr.findAll('td')
+
+        a = tds[0].find('a')
+        announcement['date'] = [str(a.string).strip('\r\n\t'), str(a['href']).strip('\r\n\t')]
+
+        a = tds[2].find('a')
+        announcement['headline'] = [str(a.string).strip('\r\n\t'), str(a['href']).strip('\r\n\t')]
+
+        a = tds[4].find('a')
+        announcement['pdf'] = [str(a.string).strip('\r\n\t'), str(a['href']).strip('\r\n\t')]
+
+        announcements.append(announcement)
+
+    driver.close()
+    #return json.dumps(announcements)
+    return announcements
+
 
 @app.route('/', defaults={'req_path': ''})
 @app.route('/<path:req_path>')
